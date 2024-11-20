@@ -68,13 +68,14 @@ func (s ParcelService) PrintClientParcels(client int) error {
 }
 
 func (s ParcelService) NextStatus(number int) error {
-	parcel, err := s.store.Get(number)
+	// Получаем текущий статус посылки
+	currentStatus, err := s.store.GetStatus(number)
 	if err != nil {
 		return err
 	}
 
 	var nextStatus string
-	switch parcel.Status {
+	switch currentStatus {
 	case ParcelStatusRegistered:
 		nextStatus = ParcelStatusSent
 	case ParcelStatusSent:
@@ -98,8 +99,15 @@ func (s ParcelService) Delete(number int) error {
 
 func main() {
 	// настройте подключение к БД
+	db, err := sql.Open("sqlite", "tracker.db")
+	if err != nil {
+		fmt.Println("Ошибка подключения к базе данных:", err)
+		return
+	}
+	defer db.Close()
 
-	store := // создайте объект ParcelStore функцией NewParcelStore
+	// Здесь создается экземпляр ParcelStore
+	store := NewParcelStore(db) // создайте объект ParcelStore функцией NewParcelStore
 	service := NewParcelService(store)
 
 	// регистрация посылки
