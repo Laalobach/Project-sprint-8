@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	_ "modernc.org/sqlite"
 )
@@ -96,7 +97,7 @@ func TestSetAddress(t *testing.T) {
 	// получите добавленную посылку и убедитесь, что адрес обновился
 	updatedParcel, err := store.Get(id)
 	require.NoError(t, err)
-	require.Equal(t, newAddress, updatedParcel.Address)
+	assert.Equal(t, newAddress, updatedParcel.Address)
 }
 
 // TestSetStatus проверяет обновление статуса
@@ -124,7 +125,7 @@ func TestSetStatus(t *testing.T) {
 	// Проверяем, что статус обновился
 	updatedParcel, err := store.Get(id)
 	require.NoError(t, err)
-	require.Equal(t, newStatus, updatedParcel.Status)
+	assert.Equal(t, newStatus, updatedParcel.Status)
 }
 
 // TestGetByClient проверяет получение посылок по идентификатору клиента
@@ -155,7 +156,7 @@ func TestGetByClient(t *testing.T) {
 	for i, parcel := range parcels {
 		id, err := store.Add(parcel) // добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
 		require.NoError(t, err)
-		require.NotZero(t, id)
+		assert.NotZero(t, id)
 
 		// обновляем идентификатор добавленной у посылки
 		parcels[i].Number = id
@@ -171,15 +172,8 @@ func TestGetByClient(t *testing.T) {
 
 	storedParcels, err := store.GetByClient(client)
 	require.NoError(t, err)
-	require.Len(t, storedParcels, len(parcels))
+	assert.Len(t, storedParcels, len(parcels))
 
-	// check
-	for _, parcel := range storedParcels {
-		// в parcelMap лежат добавленные посылки, ключ - идентификатор посылки, значение - сама посылки
-		// убедитесь, что все посылки из storedParcels есть в parcelMap
-		// убедитесь, что значения полей полученных посылок заполнены верно
-		expectedParcel, ok := parcelMap[parcel.Number]
-		require.True(t, ok, "Посылка с номером %d не найдена в ожидаемых данных", parcel.Number)
-		require.Equal(t, expectedParcel, parcel)
-	}
+	// Убедимся, что содержимое массивов совпадает
+	assert.ElementsMatch(t, parcels, storedParcels)
 }

@@ -1,4 +1,4 @@
-module main
+module parcel
 
 go 1.22.4
 

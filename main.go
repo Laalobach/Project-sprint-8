@@ -69,13 +69,13 @@ func (s ParcelService) PrintClientParcels(client int) error {
 
 func (s ParcelService) NextStatus(number int) error {
 	// Получаем текущий статус посылки
-	currentStatus, err := s.store.GetStatus(number)
+	parcel, err := s.store.Get(number)
 	if err != nil {
 		return err
 	}
 
 	var nextStatus string
-	switch currentStatus {
+	switch parcel.Status {
 	case ParcelStatusRegistered:
 		nextStatus = ParcelStatusSent
 	case ParcelStatusSent:

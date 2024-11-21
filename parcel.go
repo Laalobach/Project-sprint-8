@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+
 )
 
 type ParcelStore struct {
@@ -38,7 +39,7 @@ func (s ParcelStore) Get(number int) (Parcel, error) {
 	// реализуйте чтение строки по заданному number
 	// здесь из таблицы должна вернуться только одна строка
 	query := `
-		SELECT *
+		SELECT number, client, status, address, created_at
 		FROM parcel
 		WHERE number = ?
 	`
@@ -127,26 +128,16 @@ func (s ParcelStore) SetAddress(number int, address string) error {
 	// реализуйте обновление адреса в таблице parcel
 	// менять адрес можно только если значение статуса registered
 
-	// Получаем текущий статус посылки
-	currentStatus, err := s.GetStatus(number)
-	if err != nil {
-		return err
-	}
-
-	// Проверяем, что статус позволяет изменить адрес
-	if currentStatus != ParcelStatusRegistered {
-		return fmt.Errorf("нельзя изменить адрес для посылки № %d, её статус: %s", number, currentStatus)
-	}
-
 	// SQL-запрос для обновления статуса посылки
 	query := `
 		UPDATE parcel
 		SET address = ?
 		WHERE number = ?
+		AND status = ?
 	`
 
 	// Выполняем запрос
-	result, err := s.db.Exec(query, address, number)
+	result, err := s.db.Exec(query, address, number, ParcelStatusRegistered)
 	if err != nil {
 		return fmt.Errorf("не удалось обновить адресс посылки № %d: %w", number, err)
 	}
@@ -166,29 +157,19 @@ func (s ParcelStore) SetAddress(number int, address string) error {
 func (s ParcelStore) Delete(number int) error {
 	// реализуйте удаление строки из таблицы parcel
 	// удалять строку можно только если значение статуса registered
-
-	// Шаг 1: Получаем текущий статус посылки
-	currentStatus, err := s.GetStatus(number)
-	if err != nil {
-		return err // Ошибка при получении статуса
-	}
-
-	// Шаг 2: Проверяем, что статус позволяет удаление
-	if currentStatus != ParcelStatusRegistered {
-		return fmt.Errorf("нельзя удалить посылку № %d, её статус: %s", number, currentStatus)
-	}
-
-	// Шаг 3: Удаляем запись из таблицы
+	
+	// Удаляем запись из таблицы при 
 	deleteQuery := `
 		DELETE FROM parcel
 		WHERE number = ?
+		AND status = ?
 	`
-	result, err := s.db.Exec(deleteQuery, number)
+	result, err := s.db.Exec(deleteQuery, number, ParcelStatusRegistered)
 	if err != nil {
 		return fmt.Errorf("ошибка при удалении посылки № %d: %w", number, err)
 	}
 
-	// Шаг 4: Проверяем, что была удалена хотя бы одна строка
+	// Проверяем, что была удалена хотя бы одна строка
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("не удалось проверить затронутые строки: %w", err)
@@ -198,27 +179,4 @@ func (s ParcelStore) Delete(number int) error {
 	}
 
 	return nil
-}
-
-func (s ParcelStore) GetStatus(number int) (string, error) {
-	// SQL-запрос для получения текущего статуса посылки
-	query := `
-		SELECT status
-		FROM parcel
-		WHERE number = ?
-	`
-
-	// Переменная для хранения статуса
-	var status string
-
-	// Выполняем запрос
-	err := s.db.QueryRow(query, number).Scan(&status)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return "", fmt.Errorf("посылка с номером %d не найдена", number)
-		}
-		return "", fmt.Errorf("ошибка при получении статуса посылки № %d: %w", number, err)
-	}
-
-	return status, nil
 }
